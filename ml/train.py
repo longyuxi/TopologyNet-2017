@@ -19,11 +19,13 @@ index_location = '/home/longyuxi/Documents/mount/pdbbind-dataset/index/INDEX_ref
 homologies_base_folder = (Path(__file__).parent / '..' / 'ph'/ 'computed_homologies').resolve()
 homologies_base_folder = str(homologies_base_folder)
 
+# See documentation of `WeiTopoNet` in models.py for details on this
+TRANSPOSE_DATASET = True
+
 ##################
 
 
 
-TRANSPOSE_DATASET = True
 print('transpose dataset:', TRANSPOSE_DATASET)
 
 index = load_pdbbind_data_index(index_location)

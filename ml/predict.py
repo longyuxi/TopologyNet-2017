@@ -3,6 +3,8 @@
 
 import sys
 from pathlib import Path
+sys.path.append(str(Path(__file__).parent / '..'/ 'ph'))
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -15,18 +17,23 @@ from dataset import WeiDataset
 from models import WeiTopoNet
 
 
-if sys.platform == 'linux':
-    index_location = '/home/longyuxi/Documents/mount/pdbbind-dataset/index/INDEX_refined_data.2020'
-else:
-    raise Exception
+#################
+# Change this
+
+index_location = '/home/longyuxi/Documents/mount/pdbbind-dataset/index/INDEX_refined_data.2020'
+weights = glob.glob('lightning_logs/version_0/checkpoints/*')[0]
+homologies_base_folder = (Path(__file__).parent / '..' / 'ph'/ 'computed_homologies').resolve()
+homologies_base_folder = str(homologies_base_folder)
+
+#################
 
 
 TRANSPOSE_DATASET = True # Set this to whatever is done at training time
 
 index = load_pdbbind_data_index(index_location)
-wd = WeiDataset(index, transpose=TRANSPOSE_DATASET, return_pdb_code_first=True)
+wd = WeiDataset(index, transpose=TRANSPOSE_DATASET, return_pdb_code_first=True, homology_base_folder=homologies_base_folder)
 wtn = WeiTopoNet()
-wtn = wtn.load_from_checkpoint(glob.glob('lightning_logs/transpose_glorot/checkpoints/*')[0], transpose=TRANSPOSE_DATASET)
+wtn = wtn.load_from_checkpoint(weights, transpose=TRANSPOSE_DATASET)
 
 
 predicted = []
