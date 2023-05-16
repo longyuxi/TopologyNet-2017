@@ -8,15 +8,6 @@ import argparse
 import pickle
 from pathlib import Path
 
-parser = argparse.ArgumentParser(description='Calculate persistence homology for up to dimension 2 using opposition distance')
-parser.add_argument('--protein', type=str, help='protein file (pdb)')
-parser.add_argument('--ligand', type=str, help='ligand file (mol2)')
-parser.add_argument('--output', type=str, help='Pickle file to output to')
-
-args = parser.parse_args()
-protein_pdb = Path(args.protein)
-ligand_mol2 = Path(args.ligand)
-output_file = Path(args.output)
 # stored into a numpy array
 
 def atom_persistence_homology(coords):
@@ -121,4 +112,14 @@ def run(pdb_file, mol2_file, output_file):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Calculate persistence homology for up to dimension 2 using opposition distance')
+    parser.add_argument('--protein', type=str, help='protein file (pdb)')
+    parser.add_argument('--ligand', type=str, help='ligand file (mol2)')
+    parser.add_argument('--output', type=str, help='Pickle file to output to')
+
+    args = parser.parse_args()
+    protein_pdb = Path(args.protein)
+    ligand_mol2 = Path(args.ligand)
+    output_file = Path(args.output)
+
     run(protein_pdb, ligand_mol2, output_file)
