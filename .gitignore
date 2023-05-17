@@ -3,3 +3,6 @@ ph/computed_homologies
 ml/__pycache__
 ml/lightning_logs
 ml/plots
+perturbations/__pycache__
+perturbations/data
+perturbations/slurm_logs

@@ -1,15 +1,37 @@
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent / '..'/ 'ph'))
+
 import argparse
 import pandas as pd
 import traceback
 import dispatch_jobs
-import redis
+import calculate_2345_homology
+import calculate_pairwise_opposition_homologies_binned
 
 DB = dispatch_jobs.get_db()
 
 def job(key):
     # The part where the job actually runs, given df and idx as input
+
+    # Each entry in the redis database should be a dictionary in the following form
+
+    # job_index (key_prefix + job_index = key in database),
+    # {
+    #     protein_file: name of pdb file,
+    #     ligand_file: name of ligand mol2 file,
+    #     save_folder: where to save the output
+    #     atom_index: index of atom that is perturbed,
+    #     perturbation_index: perturbation index (passed in to the perturbation function)
+    #     attempted: true/false
+    #     error: true/false
+    #     finished: true/false
+    # }
+
     d = DB.hgetall(key)
-    calculate(d['folder'], d['name'] + '_ligand', d['name'] + '_protein')
+
+    calculate_2345_homology.run(d['protein_file'], d['ligand_file'], d['save_folder'] + '/2345_homology.pckl')
+    calculate_pairwise_opposition_homologies_binned.run(d['protein_file'], d['ligand_file'], d['save_folder'] + '/pairwise_opposition.pckl')
 
 
 if __name__ == '__main__':
@@ -28,6 +50,7 @@ if __name__ == '__main__':
         d['finished'] = 'True'
         d['error'] = 'False'
         DB.hset(key, mapping=d)
+        print('job success')
 
     except Exception as err:
         print(Exception, err)

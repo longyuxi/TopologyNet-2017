@@ -8,14 +8,19 @@ def simple_sampler(original_position, epsilon, idx):
     # Translates the original position in all six directions
     if idx >= 6: raise Exception
     new_position = original_position
-    new_position[int(idx / 2)] += (idx%2) * epsilon
+
+    if idx % 2 == 0:
+        new_position[int(idx / 2)] += epsilon
+    else:
+        new_position[int(idx / 2)] -= epsilon
+
     return new_position
 
 
 ######################
 # Example pdb structures
-protein_pdb = '/home/longyuxi/Documents/mount/pdbbind-dataset/refined-set/1adl/1adl_protein.pdb'
-ligand_mol2 = '/home/longyuxi/Documents/mount/pdbbind-dataset/refined-set/1adl/1adl_ligand.mol2'
+protein_pdb = '/hpc/group/donald/yl708/TopologyNet-2017/perturbations/data/1a1e_protein.pdb'
+ligand_mol2 = '/hpc/group/donald/yl708/TopologyNet-2017/perturbations/data/1a1e_ligand.mol2'
 
 # Sampler
 # Returns a position based on original_position, idx
@@ -46,6 +51,15 @@ def get_num_atoms(structure):
 
 n_atoms = get_num_atoms(protein_structure)
 print(f'Number of atoms in protein: {n_atoms}')
+
+
+atoms = [a for a in protein_structure.get_atoms()]
+
+atom = atoms[0]
+original_coords = atom.get_coord()
+print(f'Original coordinates: {original_coords}')
+perturbed_coords = PERTURBATION_SAMPLER(original_coords, 0.1, 0)
+print(f'Perturbed coordinates: {perturbed_coords}')
 
 
 # Do some fancy manipulation of structures here

@@ -1,21 +1,27 @@
-# Making the csv file
-# If running on python2, also need to `pip install future-fstrings pathlib`
-
 import glob
 import os
 import pandas as pd
 import pathlib
-import socket
+import logging
 import redis
 import numpy as np
-import random
+from Bio.PDB import PDBParser, PDBIO
+from tqdm import tqdm
 
-# Change these as necessary
+logging.basicConfig(level=logging.INFO)
+
+###############################
+# Platform specific variables #
+#                             #
+# Change to fit to job        #
+###############################
+
 
 KEY_PREFIX = 'perturb_' # Prefix of every job, as appears in the Redis database
-CLUSTER = 'CS' # or 'DCC'
+CLUSTER = 'DCC' # or 'DCC'
 
 if CLUSTER == 'CS':
+    raise NotImplementedError
     cwd = pathlib.Path(__file__).parent.resolve()
     CSV_FILE = f'{cwd}/jobs.csv'
     NUM_JOBS_TO_SUBMIT = 300
@@ -45,52 +51,106 @@ cd {ROOT_DIR}
     PDB_NAMES = [f.split('/')[-1] for f in FOLDERS]
 
 elif CLUSTER == 'DCC':
-    cwd = pathlib.Path(__file__).parent.resolve()
-    CSV_FILE = f'{cwd}/jobs.csv'
-    NUM_JOBS_TO_SUBMIT = 5
-    PYTHON_EXECUTABLE = '/usr/project/dlab/Users/jaden/mambaforge/envs/algtop-ph/bin/python'
-    ROOT_DIR = '/work/yl708/algebraic-topology-biomolecules/ph'
+    NUM_JOBS_TO_SUBMIT = 20000
+    PYTHON_EXECUTABLE = '/hpc/group/donald/yl708/mambaforge/envs/tnet2017/bin/python'
+    ROOT_DIR = '/hpc/group/donald/yl708/TopologyNet-2017/perturbations'
     SBATCH_TEMPLATE = f"""#!/bin/bash
-#SBATCH --partition=scavenger
+#SBATCH --partition=common-old,scavenger,common
 #SBATCH --time='1:00:00'
 #SBATCH --requeue
 #SBATCH --chdir={ROOT_DIR}
-#SBATCH --output={ROOT_DIR}/slurm-outs/%x-%j-slurm.out
+#SBATCH --output={ROOT_DIR}/slurm_logs/%x-%j-slurm.out
 #SBATCH --mem=4G
 
 source ~/.bashrc
 source ~/.bash_profile
 date
 hostname
-conda activate /work/yl708/algebraic-topology-biomolecules/algtop-environment
+conda activate tnet2017
 cd {ROOT_DIR}
 
-module load R/4.1.1-rhel8
-module load Matlab
 
     """
 
-    FOLDERS = glob.glob('/work/yl708/pdbbind/refined-set/*')
+    DB = redis.Redis(host='dcc-login-03', port=6379, decode_responses=True, password="topology")
+    ORIGINAL_PROTEIN_FILE = '/hpc/group/donald/yl708/TopologyNet-2017/perturbations/data/1a1e_protein.pdb'
+    LIGAND_FILE = '/hpc/group/donald/yl708/TopologyNet-2017/perturbations/data/1a1e_ligand.mol2'
+    PERTURBATION_SAVE_FOLDER = '/hpc/group/donald/yl708/TopologyNet-2017/perturbations/data/'
 
 else:
-    raise Exception # incorrect specification of cluster
-
-get_name = lambda folder: folder.split('/')[-1]
-get_db_key = lambda folder: KEY_PREFIX + get_name(folder)
+    raise Exception     # Incorrect specification of cluster variable
 
 
-def submit_job()
+# Perturbations
+def simple_sampler(original_position, epsilon, idx):
+    # Translates the original position in all six directions
+    if idx >= 6: raise Exception
+    new_position = original_position
+    new_position[int(idx / 2)] += (idx%2) * epsilon
+    return new_position
+
+
+# PERTURBATION_SAMPLER returns a position based on original_position, idx
+PERTURBATION_SAMPLER = lambda original_position, idx: simple_sampler(original_position, 0.1, idx)
+PERTURBATIONS_PER_ATOM = 6
+
+
+#############################
+# Pre-execution Tests       #
+#############################
+
+# Database connection
+DB.set('connection-test', '123')
+if DB.get('connection-test') == '123':
+    DB.delete('abc')
+    logging.info('Database connection successful')
+else:
+    raise Exception     # Database connection failed
+
+
+pdbio = PDBIO()
+pdbparser = PDBParser(PERMISSIVE=1, QUIET=True)
+
+
+get_num_atoms = lambda structure: len([a for a in structure.get_atoms()])
+get_pdb_name = lambda file: file.split('/')[-1].split('_')[0]
+
+protein_structure = pdbparser.get_structure(ORIGINAL_PROTEIN_FILE, ORIGINAL_PROTEIN_FILE)
+n_atoms = get_num_atoms(protein_structure)
+
+print(f'Number of atoms in protein {get_pdb_name(ORIGINAL_PROTEIN_FILE)}: {n_atoms}')
+
+KEY_PREFIX += get_pdb_name(ORIGINAL_PROTEIN_FILE) + '_'
+
+#############################
+# Actual logic              #
+#############################
+
+# Each entry in the redis database should be a dictionary in the following form
+
+# job_index (key_prefix + job_index = key in database),
+# {
+#     protein_file: name of pdb file,
+#     ligand_file: name of ligand mol2 file,
+#     save_folder: where to save the output
+#     atom_index: index of atom that is perturbed,
+#     perturbation_index: perturbation index (passed in to the perturbation function)
+#     attempted: true/false
+#     error: true/false
+#     finished: true/false
+# }
+
 def main():
     # Initialize database
     populate_db()
-    folder_it = iter(FOLDERS)
+
 
     # Then submit jobs until either running out of entries or running out of number of jobs to submit
     i = 0
-    for folder in folder_it:
+    for key in DB.keys(KEY_PREFIX + '*'):
         if i == NUM_JOBS_TO_SUBMIT:
             break
-        info = DB.hgetall(get_db_key(folder))
+        info = DB.hgetall(key)
 
         if info['finished'] == 'True' and info['error'] == 'False':
             continue
@@ -98,67 +158,67 @@ def main():
             i += 1
             # submit job for it
             info['attempted'] = 'True'
-            DB.hset(get_db_key(folder), mapping=info)
+            DB.hset(key, mapping=info)
 
             # sbatch run job wrapper
-            sbatch_cmd = SBATCH_TEMPLATE + f'\n{PYTHON_EXECUTABLE} {str(pathlib.Path(__file__).parent) + "/job_wrapper.py"} --key {get_db_key(folder)}'
+            sbatch_cmd = SBATCH_TEMPLATE + f'\n{PYTHON_EXECUTABLE} {str(pathlib.Path(__file__).parent) + "/job_wrapper.py"} --key {key}'
 
             # print(sbatch_cmd)
             with open('run.sh', 'w') as f:
                 f.write(sbatch_cmd)
 
-            os.system(f'sbatch --job-name={get_name(folder)} run.sh')
+            os.system(f'sbatch --job-name={key} run.sh')
 
     print(f'Number of jobs submitted: {i}')
 
 def populate_db():
-    # For each key, add its default entry to the database if it does not exist
-    list(map(lambda folder: DB.hset(get_db_key(folder), mapping={
-        'name': get_name(folder),
-        'folder': folder,
-        'attempted': 'False',
-        'finished': 'False',
-        'error': 'False'
-    }), filter(lambda folder: not DB.exists(get_db_key(folder)), FOLDERS)))
+    logging.info('Populating database')
+    n_jobs = n_atoms * PERTURBATIONS_PER_ATOM
+    keys = [KEY_PREFIX + str(i) for i in range(n_jobs)]
+
+    database_keys = DB.keys()
+    for k in tqdm(keys):
+        if k in database_keys:
+            logging.debug("Key already exists in database")
+            continue
+
+        # First perturb the original pdb file and save it to a folder with corresponding index
+        # Then add the entry to the database
+        idx = int(k.split(KEY_PREFIX)[1])
+        atom_idx = int(idx / PERTURBATIONS_PER_ATOM)
+        perturbation_idx = idx % PERTURBATIONS_PER_ATOM
+
+        # Perturb the original pdb file
+        protein_structure = pdbparser.get_structure(ORIGINAL_PROTEIN_FILE, ORIGINAL_PROTEIN_FILE)
+        atom = [a for a in protein_structure.get_atoms()][atom_idx]
+        atom.set_coord(PERTURBATION_SAMPLER(atom.get_coord(), perturbation_idx))
+
+        # Save the perturbed pdb file
+        save_folder = pathlib.Path(f'{PERTURBATION_SAVE_FOLDER}/{KEY_PREFIX}{idx}').mkdir(parents=True, exist_ok=True)
+        pdbio.set_structure(protein_structure)
+        pdbio.save(f'{PERTURBATION_SAVE_FOLDER}/{KEY_PREFIX}{idx}/{KEY_PREFIX}{idx}.pdb')
+
+        # Add the entry to the database
+        DB.hset(k, mapping={
+            'protein_file': f'{PERTURBATION_SAVE_FOLDER}/{KEY_PREFIX}{idx}/{KEY_PREFIX}{idx}.pdb',
+            'ligand_file': LIGAND_FILE,
+            'save_folder': f'{PERTURBATION_SAVE_FOLDER}/{KEY_PREFIX}{idx}',
+            'atom_index': atom_idx,
+            'perturbation_index': perturbation_idx,
+            'attempted': 'False',
+            'error': 'False',
+            'finished': 'False'
+        })
+
+
 
 def rebuild_db():
-    n_fin = 0
-    n_err = 0
-    for folder in FOLDERS:
-        if len(glob.glob(folder + '/*')) == 6:
-            DB.hset(get_db_key(folder), mapping={
-                'name': get_name(folder),
-                'folder': folder,
-                'attempted': 'False',
-                'finished': 'False',
-                'error': 'False'
-            })
-        elif len(glob.glob(folder + '/*')) == 20:
-            DB.hset(get_db_key(folder), mapping={
-                'name': get_name(folder),
-                'folder': folder,
-                'attempted': 'True',
-                'finished': 'True',
-                'error': 'False'
-            })
-            n_fin += 1
-        else:
-            DB.hset(get_db_key(folder), mapping={
-                'name': get_name(folder),
-                'folder': folder,
-                'attempted': 'True',
-                'finished': 'False',
-                'error': 'True'
-            })
-            n_err += 1
-
-    print(f'Rebuilding database: Number finished: {n_fin}; number erred: {n_err}; number not started: {len(FOLDERS) - n_fin - n_err}')
-
+    raise NotImplementedError
 
 def get_db():
     # Pinnacle of OOP
     return DB
 
 if __name__ == '__main__':
-    rebuild_db()
+    # rebuild_db()
     main()
