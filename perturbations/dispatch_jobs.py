@@ -7,6 +7,7 @@ import redis
 import numpy as np
 from Bio.PDB import PDBParser, PDBIO
 from tqdm import tqdm
+import time
 
 logging.basicConfig(level=logging.INFO)
 
@@ -51,16 +52,15 @@ cd {ROOT_DIR}
     PDB_NAMES = [f.split('/')[-1] for f in FOLDERS]
 
 elif CLUSTER == 'DCC':
-    NUM_JOBS_TO_SUBMIT = 20000
+    NUM_JOBS_TO_SUBMIT = 81000
     PYTHON_EXECUTABLE = '/hpc/group/donald/yl708/mambaforge/envs/tnet2017/bin/python'
     ROOT_DIR = '/hpc/group/donald/yl708/TopologyNet-2017/perturbations'
     SBATCH_TEMPLATE = f"""#!/bin/bash
-#SBATCH --partition=common-old,scavenger,common
-#SBATCH --time='1:00:00'
+#SBATCH --partition=common-old,scavenger
 #SBATCH --requeue
 #SBATCH --chdir={ROOT_DIR}
 #SBATCH --output={ROOT_DIR}/slurm_logs/%x-%j-slurm.out
-#SBATCH --mem=4G
+#SBATCH --mem=2500M
 
 source ~/.bashrc
 source ~/.bash_profile
@@ -73,8 +73,8 @@ cd {ROOT_DIR}
     """
 
     DB = redis.Redis(host='dcc-login-03', port=6379, decode_responses=True, password="topology")
-    ORIGINAL_PROTEIN_FILE = '/hpc/group/donald/yl708/TopologyNet-2017/perturbations/data/1a1e_protein.pdb'
-    LIGAND_FILE = '/hpc/group/donald/yl708/TopologyNet-2017/perturbations/data/1a1e_ligand.mol2'
+    ORIGINAL_PROTEIN_FILE = '/hpc/group/donald/yl708/TopologyNet-2017/perturbations/data/1a4k_protein.pdb'
+    LIGAND_FILE = '/hpc/group/donald/yl708/TopologyNet-2017/perturbations/data/1a4k_ligand.mol2'
     PERTURBATION_SAVE_FOLDER = '/hpc/group/donald/yl708/TopologyNet-2017/perturbations/data/'
 
 else:
@@ -140,36 +140,45 @@ KEY_PREFIX += get_pdb_name(ORIGINAL_PROTEIN_FILE) + '_'
 #     finished: true/false
 # }
 
-def main():
-    # Initialize database
-    populate_db()
-
+def main(dry_run=False):
+    # Initialize database on first run
+    if dry_run:
+        populate_db()
 
     # Then submit jobs until either running out of entries or running out of number of jobs to submit
     i = 0
-    for key in DB.keys(KEY_PREFIX + '*'):
+
+    database_keys = DB.keys(KEY_PREFIX + '*')
+    for key in database_keys:
         if i == NUM_JOBS_TO_SUBMIT:
             break
         info = DB.hgetall(key)
 
         if info['finished'] == 'True' and info['error'] == 'False':
+        # if info['attempted'] == 'True':
             continue
         else:
             i += 1
             # submit job for it
-            info['attempted'] = 'True'
-            DB.hset(key, mapping=info)
+            if not dry_run:
+                info['attempted'] = 'True'
+                DB.hset(key, mapping=info)
 
-            # sbatch run job wrapper
-            sbatch_cmd = SBATCH_TEMPLATE + f'\n{PYTHON_EXECUTABLE} {str(pathlib.Path(__file__).parent) + "/job_wrapper.py"} --key {key}'
+                # sbatch run job wrapper
+                sbatch_cmd = SBATCH_TEMPLATE + f'\n{PYTHON_EXECUTABLE} {str(pathlib.Path(__file__).parent) + "/job_wrapper.py"} --key {key}'
 
-            # print(sbatch_cmd)
-            with open('run.sh', 'w') as f:
-                f.write(sbatch_cmd)
+                # print(sbatch_cmd)
+                with open('run.sh', 'w') as f:
+                    f.write(sbatch_cmd)
 
-            os.system(f'sbatch --job-name={key} run.sh')
+                os.system(f'sbatch --job-name={key} run.sh')
 
-    print(f'Number of jobs submitted: {i}')
+    if dry_run:
+        print(f'Number of jobs that would be submitted: {i}')
+        time.sleep(5)
+    else:
+        print(f'Number of jobs submitted: {i}')
+
 
 def populate_db():
     logging.info('Populating database')
@@ -179,7 +188,7 @@ def populate_db():
     database_keys = DB.keys()
     for k in tqdm(keys):
         if k in database_keys:
-            logging.debug("Key already exists in database")
+            logging.debug(f"Key {k} already exists in database")
             continue
 
         # First perturb the original pdb file and save it to a folder with corresponding index
@@ -221,4 +230,5 @@ def get_db():
 
 if __name__ == '__main__':
     # rebuild_db()
-    main()
+    main(dry_run=True)
+    main(dry_run=False)
