@@ -6,3 +6,5 @@ ml/plots
 perturbations/__pycache__
 perturbations/data
 perturbations/slurm_logs
+svm/__pycache__
+svm/slurm_logs

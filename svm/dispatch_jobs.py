@@ -8,6 +8,7 @@ import numpy as np
 from Bio.PDB import PDBParser, PDBIO
 from tqdm import tqdm
 import time
+import svm_ph
 
 logging.basicConfig(level=logging.INFO)
 
@@ -18,8 +19,8 @@ logging.basicConfig(level=logging.INFO)
 ###############################
 
 
-KEY_PREFIX = 'perturb_' # Prefix of every job, as appears in the Redis database
-CLUSTER = 'DCC' # or 'DCC'
+KEY_PREFIX = 'svmph_' # Prefix of every job, as appears in the Redis database
+CLUSTER = 'DCC' # 'CS' or 'DCC'
 
 if CLUSTER == 'CS':
     raise NotImplementedError
@@ -52,9 +53,9 @@ cd {ROOT_DIR}
     PDB_NAMES = [f.split('/')[-1] for f in FOLDERS]
 
 elif CLUSTER == 'DCC':
-    NUM_JOBS_TO_SUBMIT = 81000
+    NUM_JOBS_TO_SUBMIT = 6000
     PYTHON_EXECUTABLE = '/hpc/group/donald/yl708/mambaforge/envs/tnet2017/bin/python'
-    ROOT_DIR = '/hpc/group/donald/yl708/TopologyNet-2017/perturbations'
+    ROOT_DIR = f'{pathlib.Path(__file__).parent.resolve()}'
     SBATCH_TEMPLATE = f"""#!/bin/bash
 #SBATCH --partition=common-old,scavenger
 #SBATCH --requeue
@@ -73,26 +74,12 @@ cd {ROOT_DIR}
     """
 
     DB = redis.Redis(host='dcc-login-03', port=6379, decode_responses=True, password="topology")
-    ORIGINAL_PROTEIN_FILE = '/hpc/group/donald/yl708/perturbations-data/1a4k_protein.pdb'
-    LIGAND_FILE = '/hpc/group/donald/yl708/perturbations-data/1a4k_ligand.mol2'
-    PERTURBATION_SAVE_FOLDER = '/hpc/group/donald/yl708/perturbations-data/'
+    INDEX = svm_ph.INDEX
+    BASE_FOLDER = svm_ph.BASE_FOLDER
+    OUTPUT_BASE_FOLDER = svm_ph.OUTPUT_BASE_FOLDER
 
 else:
     raise Exception     # Incorrect specification of cluster variable
-
-
-# Perturbations
-def simple_sampler(original_position, epsilon, idx):
-    # Translates the original position in all six directions
-    if idx >= 6: raise Exception
-    new_position = original_position
-    new_position[int(idx / 2)] += (idx%2) * epsilon
-    return new_position
-
-
-# PERTURBATION_SAMPLER returns a position based on original_position, idx
-PERTURBATION_SAMPLER = lambda original_position, idx: simple_sampler(original_position, 0.1, idx)
-PERTURBATIONS_PER_ATOM = 6
 
 
 #############################
@@ -107,20 +94,6 @@ if DB.get('connection-test') == '123':
 else:
     raise Exception     # Database connection failed
 
-
-pdbio = PDBIO()
-pdbparser = PDBParser(PERMISSIVE=1, QUIET=True)
-
-
-get_num_atoms = lambda structure: len([a for a in structure.get_atoms()])
-get_pdb_name = lambda file: file.split('/')[-1].split('_')[0]
-
-protein_structure = pdbparser.get_structure(ORIGINAL_PROTEIN_FILE, ORIGINAL_PROTEIN_FILE)
-n_atoms = get_num_atoms(protein_structure)
-
-print(f'Number of atoms in protein {get_pdb_name(ORIGINAL_PROTEIN_FILE)}: {n_atoms}')
-
-KEY_PREFIX += get_pdb_name(ORIGINAL_PROTEIN_FILE) + '_'
 
 #############################
 # Actual logic              #
@@ -182,44 +155,35 @@ def main(dry_run=False):
 
 def populate_db():
     logging.info('Populating database')
-    n_jobs = n_atoms * PERTURBATIONS_PER_ATOM
-    keys = [KEY_PREFIX + str(i) for i in range(n_jobs)]
 
     database_keys = DB.keys()
-    for k in tqdm(keys):
-        if k in database_keys:
-            logging.debug(f"Key {k} already exists in database")
-            continue
 
-        # First perturb the original pdb file and save it to a folder with corresponding index
-        # Then add the entry to the database
-        idx = int(k.split(KEY_PREFIX)[1])
-        atom_idx = int(idx / PERTURBATIONS_PER_ATOM)
-        perturbation_idx = idx % PERTURBATIONS_PER_ATOM
+    update_counter = 0
+    for i in tqdm(range(len(INDEX))):
+        k = KEY_PREFIX + INDEX.at[i, 'PDB code']
 
-        # Perturb the original pdb file
-        protein_structure = pdbparser.get_structure(ORIGINAL_PROTEIN_FILE, ORIGINAL_PROTEIN_FILE)
-        atom = [a for a in protein_structure.get_atoms()][atom_idx]
-        atom.set_coord(PERTURBATION_SAMPLER(atom.get_coord(), perturbation_idx))
+        # if k in database_keys:
+        #     logging.debug(f'{k} already in database')
+        #     continue
 
-        # Save the perturbed pdb file
-        save_folder = pathlib.Path(f'{PERTURBATION_SAVE_FOLDER}/{KEY_PREFIX}{idx}').mkdir(parents=True, exist_ok=True)
-        pdbio.set_structure(protein_structure)
-        pdbio.save(f'{PERTURBATION_SAVE_FOLDER}/{KEY_PREFIX}{idx}/{KEY_PREFIX}{idx}.pdb')
+        # Get the index dataframe info as a dictionary
+        info = INDEX.iloc[i].to_dict()
 
-        # Add the entry to the database
-        DB.hset(k, mapping={
-            'protein_file': f'{PERTURBATION_SAVE_FOLDER}/{KEY_PREFIX}{idx}/{KEY_PREFIX}{idx}.pdb',
-            'ligand_file': LIGAND_FILE,
-            'save_folder': f'{PERTURBATION_SAVE_FOLDER}/{KEY_PREFIX}{idx}',
-            'atom_index': atom_idx,
-            'perturbation_index': perturbation_idx,
+        db_entry = {
             'attempted': 'False',
             'error': 'False',
-            'finished': 'False'
-        })
+            'finished': 'False',
+            'protein_file': f'{BASE_FOLDER}/{info["PDB code"]}/{info["PDB code"]}_protein.pdb',
+            'ligand_file': f'{BASE_FOLDER}/{info["PDB code"]}/{info["PDB code"]}_ligand.mol2',
+            'save_folder': str(OUTPUT_BASE_FOLDER),
+            **info
+        }
 
 
+        DB.hset(k, mapping=db_entry)
+        update_counter += 1
+
+    logging.info(f'Updated {update_counter} entries in database')
 
 def rebuild_db():
     raise NotImplementedError
