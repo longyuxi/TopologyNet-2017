@@ -8,3 +8,5 @@ perturbations/data
 perturbations/slurm_logs
 svm/__pycache__
 svm/slurm_logs
+svm/images
+svm/*.npy

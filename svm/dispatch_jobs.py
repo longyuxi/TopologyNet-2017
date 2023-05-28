@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 KEY_PREFIX = 'svmph_' # Prefix of every job, as appears in the Redis database
-CLUSTER = 'DCC' # 'CS' or 'DCC'
+CLUSTER = 'local' # 'CS' or 'DCC'
 
 if CLUSTER == 'CS':
     raise NotImplementedError
@@ -77,6 +77,10 @@ cd {ROOT_DIR}
     INDEX = svm_ph.INDEX
     BASE_FOLDER = svm_ph.BASE_FOLDER
     OUTPUT_BASE_FOLDER = svm_ph.OUTPUT_BASE_FOLDER
+
+elif CLUSTER == 'local':
+    DB = redis.Redis(port=6379, decode_responses=True, password="topology")
+    # The other variables are not implemented
 
 else:
     raise Exception     # Incorrect specification of cluster variable
