@@ -45,7 +45,6 @@ class ProteinPersistenceHomologyDataset(Dataset):
         if use_only_existent_entries:
             index = filter_out_nonexistent_entries(index, homology_base_folder)
 
-        # pl.utilities.seed.seed_everything(123)
         self.index = index
         self.homology_base_folder = homology_base_folder
 
