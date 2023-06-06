@@ -12,10 +12,11 @@ from preprocessing import load_pdbbind_data_index
 import seaborn as sns
 import glob
 from tqdm import tqdm
+import plotly.express as px
 
 from dataset import WeiDataset
 from models import WeiTopoNet
-from train import get_train_test_indices
+from train import get_train_test_indices, TRANSPOSE_DATASET
 
 
 #################
@@ -28,11 +29,9 @@ homologies_base_folder = str(homologies_base_folder)
 
 #################
 
-
-TRANSPOSE_DATASET = True # Set this to whatever is done at training time
-
 if __name__ == '__main__':
     train_index, test_index = get_train_test_indices()
+    test_index.reset_index(drop=True, inplace=True)
     wd = WeiDataset(test_index, transpose=TRANSPOSE_DATASET, return_pdb_code_first=True, homology_base_folder=homologies_base_folder)
     wtn = WeiTopoNet()
     wtn = wtn.load_from_checkpoint(weights, transpose=TRANSPOSE_DATASET)
@@ -45,7 +44,7 @@ if __name__ == '__main__':
     peaked_molecules = []
     regular_molecules = []
 
-    for i in tqdm(range(5000)):
+    for i in tqdm(range(len(wd))):
         pdbcode, x, y = wd[i]
         y_hat = wtn(x[None, :, :])[0][0].detach().cpu().numpy()
         predicted.append(y_hat)
@@ -68,16 +67,18 @@ if __name__ == '__main__':
 
     df = pd.DataFrame(np.stack((predicted, actual), axis=-1), columns=['Predicted -logKd/Ki', 'Actual -logKd/Ki'])
 
-    pearson_corr = df.corr(numeric_only=True)
+    pearson_corr = df.corr(numeric_only=True).iloc[0, 1]
     mse = np.sum((np.array(predicted) - np.array(actual))**2) / len(predicted)
 
-    plt.clf()
-    fig = plt.figure()
-    sns.scatterplot(data=df, x='Actual -logKd/Ki', y='Predicted -logKd/Ki')
-    ax = fig.gca()
-    ax.set_title(f'MSE: {mse}. $R_p$: {pearson_corr}')
-    imfile = save_base_folder / 'predictions.jpg'
-    plt.savefig(imfile)
+    # Plot distribution of binding affinity in test set
+    binding_affinities = test_index['-logKd/Ki'].to_numpy()
+    fig = px.histogram(test_index, x='-logKd/Ki', nbins=100, title=f'Test set binding affinity distribution. n={len(test_index)}, range={np.min(binding_affinities)} ~ {np.max(binding_affinities)}')
+    fig.write_html(str(save_base_folder / 'test_set_distribution.html'))
+
+    # Plot results
+    df = pd.DataFrame(np.stack((predicted, actual), axis=-1), columns=['Predicted -logKd/Ki', 'Actual -logKd/Ki'])
+    fig = px.scatter(df, x='Actual -logKd/Ki', y='Predicted -logKd/Ki', title=f'MSE: {mse:.2f}. Pearson Correlation: {pearson_corr:.2f}')
+    fig.write_html(str(save_base_folder / 'predictions.html'))
 
     # Save a version with the pdb codes
     df = pd.DataFrame(np.stack((pdbcodes, predicted, actual), axis=-1), columns=['PDB Code', 'Predicted -logKd/Ki', 'Actual -logKd/Ki'])
