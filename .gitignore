@@ -9,3 +9,4 @@ svm/__pycache__
 svm/slurm_logs
 svm/images
 svm/*.npy
+svm/npys

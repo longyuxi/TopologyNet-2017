@@ -52,12 +52,6 @@ if __name__ == '__main__':
         actual.append(y[0].detach().cpu().numpy())
         pdbcodes.append(pdbcode)
 
-        if str(y_hat) == '6.413805':
-            peaked_molecules.append(x)
-        else:
-            regular_molecules.append(x)
-
-
 
     predicted = np.array(predicted)
     actual = np.array(actual)
@@ -77,7 +71,7 @@ if __name__ == '__main__':
 
     # Plot results
     df = pd.DataFrame(np.stack((predicted, actual), axis=-1), columns=['Predicted -logKd/Ki', 'Actual -logKd/Ki'])
-    fig = px.scatter(df, x='Actual -logKd/Ki', y='Predicted -logKd/Ki', title=f'MSE: {mse:.2f}. Pearson Correlation: {pearson_corr:.2f}')
+    fig = px.scatter(df, x='Actual -logKd/Ki', y='Predicted -logKd/Ki', title=f'Test set. MSE: {mse:.2f}. Pearson Correlation: {pearson_corr:.2f}')
     fig.write_html(str(save_base_folder / 'predictions.html'))
 
     # Save a version with the pdb codes
