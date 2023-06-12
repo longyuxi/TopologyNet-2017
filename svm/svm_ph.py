@@ -14,18 +14,19 @@ from calculate_2345_homology import atom_persistence_homology
 ################
 
 
-platform = 'local'
+platform = 'CS'
 
 if platform == 'local':
     INDEX_LOCATION = Path('/home/longyuxi/Documents/mount/pdbbind-dataset/index/INDEX_refined_data.2020')
     BASE_FOLDER = Path('/home/longyuxi/Documents/mount/pdbbind-dataset/refined-set')
     OUTPUT_BASE_FOLDER = Path('/home/longyuxi/Documents/mount/persistence-diagrams')
-    INDEX = load_pdbbind_data_index(INDEX_LOCATION)
 elif platform == 'DCC':
     INDEX_LOCATION = Path('/hpc/group/donald/yl708/pdbbind/index/INDEX_refined_data.2020')
     BASE_FOLDER = Path('/hpc/group/donald/yl708/pdbbind/refined-set')
     OUTPUT_BASE_FOLDER = Path('/hpc/group/donald/yl708/persistence-diagrams')
-    INDEX = load_pdbbind_data_index(INDEX_LOCATION)
+elif platform == 'CS':
+    pass
+
 
 ################
 
@@ -104,6 +105,7 @@ def get_2345_persistence_diagrams(pdb_file, mol2_file):
 
 def main():
 
+    INDEX = load_pdbbind_data_index(INDEX_LOCATION)
     train_set = []
 
     for idx, row in INDEX.iterrows():
