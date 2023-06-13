@@ -31,9 +31,9 @@ if CLUSTER == 'CS':
 #SBATCH --requeue
 #SBATCH --chdir={ROOT_DIR}
 #SBATCH --output={ROOT_DIR}/slurm-outs/%x-%j-slurm.out
-#SBATCH --mem=1000M
+#SBATCH --mem=1500M
 #SBATCH --cpus-per-task=1
-#SBATCH --partition=compsci,grisman
+#SBATCH --partition=compsci
 
 source ~/.zshrc
 date
@@ -46,8 +46,8 @@ cd {ROOT_DIR}
 
     DB = redis.Redis(host='cybermen', port=6379, decode_responses=True, password="topology")
 
-    ORIGINAL_PROTEIN_FILE = '/usr/project/dlab/Users/jaden/perturbations/1a1e_protein.pdb'
-    LIGAND_FILE = '/usr/project/dlab/Users/jaden/perturbations/1a1e_ligand.mol2'
+    ORIGINAL_PROTEIN_FILE = '/usr/project/dlab/Users/jaden/perturbations/4crb_protein.pdb'
+    LIGAND_FILE = '/usr/project/dlab/Users/jaden/perturbations/4crb_ligand.mol2'
     PERTURBATION_SAVE_FOLDER = '/usr/project/dlab/Users/jaden/perturbations'
 
 elif CLUSTER == 'DCC':
@@ -155,8 +155,8 @@ def main(dry_run=False):
             break
         info = DB.hgetall(key)
 
-        if info['finished'] == 'True' and info['error'] == 'False':
-        # if info['attempted'] == 'True':
+        # if info['finished'] == 'True' and info['error'] == 'False':
+        if info['attempted'] == 'True':
             continue
         else:
             i += 1
