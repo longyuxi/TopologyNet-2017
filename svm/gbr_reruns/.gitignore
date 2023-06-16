@@ -1,0 +1,4 @@
+slurm-outs
+__pycache__
+additional_results
+run.sh
