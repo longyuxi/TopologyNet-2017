@@ -23,7 +23,7 @@ CLUSTER = 'CS' # or 'DCC'
 
 if CLUSTER == 'CS':
     cwd = pathlib.Path(__file__).parent.resolve()
-    NUM_JOBS_TO_SUBMIT = 20000
+    NUM_JOBS_TO_SUBMIT = 30000
     PYTHON_EXECUTABLE = '/usr/project/dlab/Users/jaden/mambaforge/envs/tnet2017/bin/python'
     ROOT_DIR = '/usr/project/dlab/Users/jaden/tnet2017-new/svm/gbr_perturbations'
     os.system(f'mkdir -p {ROOT_DIR}/slurm-outs')
@@ -33,7 +33,8 @@ if CLUSTER == 'CS':
 #SBATCH --output={ROOT_DIR}/slurm-outs/%x-%j-slurm.out
 #SBATCH --mem=1500M
 #SBATCH --cpus-per-task=1
-#SBATCH --partition=compsci
+#SBATCH --partition=grisman
+#SBATCH --exclude=jerry1,jerry2
 
 source ~/.zshrc
 date
@@ -90,9 +91,13 @@ def simple_sampler(original_position, epsilon, idx):
     return new_position
 
 
+PERTURBATION_EPSILON = 0.5
+
 # PERTURBATION_SAMPLER returns a position based on original_position, idx
-PERTURBATION_SAMPLER = lambda original_position, idx: simple_sampler(original_position, 0.1, idx)
+PERTURBATION_SAMPLER = lambda original_position, idx: simple_sampler(original_position, PERTURBATION_EPSILON, idx)
 PERTURBATIONS_PER_ATOM = 6
+
+KEY_PREFIX += f'{PERTURBATION_EPSILON}_'
 
 
 #############################
@@ -155,8 +160,8 @@ def main(dry_run=False):
             break
         info = DB.hgetall(key)
 
-        # if info['finished'] == 'True' and info['error'] == 'False':
-        if info['attempted'] == 'True':
+        if info['finished'] == 'True' and info['error'] == 'False':
+        # if info['attempted'] == 'True':
             continue
         else:
             i += 1
