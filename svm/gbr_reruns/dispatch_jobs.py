@@ -18,7 +18,7 @@ logging.basicConfig(level=logging.INFO)
 ###############################
 
 
-KEY_PREFIX = 'gbr_rerun_50_50' # Prefix of every job, as appears in the Redis database
+KEY_PREFIX = 'gbr_rerun_90_10' # Prefix of every job, as appears in the Redis database
 TRAIN_RATIO = 0.5
 CLUSTER = 'CS' # or 'DCC'
 
@@ -32,9 +32,9 @@ if CLUSTER == 'CS':
 #SBATCH --requeue
 #SBATCH --chdir={ROOT_DIR}
 #SBATCH --output={ROOT_DIR}/slurm-outs/%x-%j-slurm.out
-#SBATCH --mem=12000M
+#SBATCH --mem=120000M
 #SBATCH --cpus-per-task=4
-#SBATCH --partition=grisman
+#SBATCH --partition=compsci
 #SBATCH --exclude=jerry1,jerry2
 
 source ~/.zshrc
@@ -190,5 +190,5 @@ def get_db():
 
 if __name__ == '__main__':
     # rebuild_db()
-    main(dry_run=True, rebuild_all_keys=True)
+    main(dry_run=True)
     main(dry_run=False)

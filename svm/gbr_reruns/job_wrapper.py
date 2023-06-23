@@ -50,6 +50,11 @@ def job(key):
     observations = np.concatenate(observations)
     binding_affinities = np.concatenate(binding_affinities)
 
+    if 'test' in d:
+        print('Test key detected, using only 10 samples')
+        observations = observations[:10]
+        binding_affinities = binding_affinities[:10]
+
     print(observations.shape)
     print(binding_affinities.shape)
 
@@ -75,8 +80,6 @@ def job(key):
     y_hat = regr.predict(X_test)
 
     fig = px.scatter(x=y_test, y=y_hat, labels={'x': 'True binding affinity', 'y': 'Predicted binding affinity'}, title=f'True vs Predicted binding affinity\nR^2 = {r2_score(y_test, y_hat):.2f}, n = {len(y_test)}, RMSE: {np.sqrt(np.mean((y_test - y_hat)**2)):.2f}, Pearson: {np.corrcoef(y_test, y_hat)[0, 1]:.2f}')
-    fig.show()
-
     fig.write_html(d['scatter_plot_file'])
 
     np.save(d['prediction_results_file'], np.stack((y_test, y_hat)))
