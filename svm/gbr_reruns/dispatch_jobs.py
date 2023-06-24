@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 KEY_PREFIX = 'gbr_rerun_90_10' # Prefix of every job, as appears in the Redis database
-TRAIN_RATIO = 0.5
+TRAIN_RATIO = 0.9
 CLUSTER = 'CS' # or 'DCC'
 
 if CLUSTER == 'CS':
