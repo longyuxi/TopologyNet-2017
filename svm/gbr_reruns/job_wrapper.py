@@ -10,6 +10,7 @@ import numpy as np
 
 import dispatch_jobs
 import svm_ph
+import analyze_gbr_importance
 
 DB = dispatch_jobs.get_db()
 pim = PersistenceImage()
@@ -91,6 +92,8 @@ def job(key):
     d['rmse'] = f'{np.sqrt(np.mean((y_test - y_hat) ** 2)):.4f}'
     d['pearson'] = f'{np.corrcoef(y_test, y_hat)[0, 1]:.4f}'
     DB.hset(key, mapping=d)
+
+    analyze_gbr_importance.analyze(regr, seed=seed, impurity_importance_html=d['impurity_importance_html'], sorted_impurity_importances_pckl=d['sorted_impurity_importances_pckl'], permutation_importance_html=d['permutation_importance_html'], sorted_permutation_importances_pckl=d['sorted_permutation_importances_pckl'])
 
 
 if __name__ == '__main__':
