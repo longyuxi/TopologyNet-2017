@@ -18,8 +18,8 @@ logging.basicConfig(level=logging.INFO)
 ###############################
 
 
-KEY_PREFIX = 'gbr_rerun_importance_90_10' # Prefix of every job, as appears in the Redis database
-TRAIN_RATIO = 0.9
+KEY_PREFIX = 'gbr_rerun_importance_75_25' # Prefix of every job, as appears in the Redis database
+TRAIN_RATIO = 0.75
 CLUSTER = 'CS' # or 'DCC'
 
 if CLUSTER == 'CS':
@@ -45,7 +45,7 @@ cd {ROOT_DIR}
 
     """
 
-    DB = redis.Redis(host='cybermen', port=6379, decode_responses=True, password="topology")
+    DB = redis.Redis(host='cybermen.cs.duke.edu', port=6379, decode_responses=True, password="topology")
 
     ADDITIONAL_SAVE_FOLDER = ROOT_DIR + '/additional_results'
     os.system(f'mkdir -p {ADDITIONAL_SAVE_FOLDER}')
@@ -194,5 +194,5 @@ def get_db():
 
 if __name__ == '__main__':
     # rebuild_db()
-    main(dry_run=True, rebuild_all_keys=True)
+    main(dry_run=True)
     main(dry_run=False)

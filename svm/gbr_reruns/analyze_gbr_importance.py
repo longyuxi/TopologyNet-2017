@@ -1,4 +1,4 @@
-def analyze(regr, seed, impurity_importance_html, sorted_impurity_importances_pckl, permutation_importance_html, sorted_permutation_importances_pckl):
+def analyze(regr, seed, impurity_importance_html, sorted_impurity_importances_pckl, permutation_importance_html, sorted_permutation_importances_pckl, test_observations, test_binding_affinities):
 
     import pickle
     import matplotlib.pyplot as plt
@@ -51,18 +51,6 @@ def analyze(regr, seed, impurity_importance_html, sorted_impurity_importances_pc
     import pickle
 
     # Load test set
-
-    with open('/usr/project/dlab/Users/jaden/tnet2017-new/svm/npys/gbr_importance_test_set/observations.npy', 'rb') as f:
-        test_observations = np.load(f)
-
-    with open('/usr/project/dlab/Users/jaden/tnet2017-new/svm/npys/gbr_importance_test_set/binding_affinities.npy', 'rb') as f:
-        test_binding_affinities = np.load(f)
-
-    test_observations = test_observations[:5]
-    test_binding_affinities = test_binding_affinities[:5]
-
-    print(test_observations.shape)
-    print(test_binding_affinities.shape)
 
     from sklearn.model_selection import train_test_split
 

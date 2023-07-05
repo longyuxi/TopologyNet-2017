@@ -34,11 +34,6 @@ elif platform == 'CS':
 def get_persistence_diagrams(pdb_file, mol2_file):
     protein_heavy_elements = ['C', 'N', 'O', 'S']
     ligand_heavy_elements = ['C', 'N', 'O', 'S', 'F', 'P', 'Cl', 'Br', 'I']
-
-    # For testing purposes
-    # protein_heavy_elements = ['C']
-    # ligand_heavy_elements = ['C']
-
     diagrams = []
 
     for pe in protein_heavy_elements:
