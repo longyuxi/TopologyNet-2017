@@ -116,4 +116,4 @@ def run(seed, graph_folder, train_ratio, max_epochs=150):
     return {'mse': mse, 'pearson_corr': pearson_corr}
 
 if __name__ == '__main__':
-    run(456, 'plots/test', 0.8, 5)
+    run(456, 'plots/test', 0.8, 150)

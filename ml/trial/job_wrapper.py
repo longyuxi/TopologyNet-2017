@@ -29,7 +29,10 @@ def job(key):
     graph_folder = d['graph_folder']
     max_epochs = int(d['max_epochs'])
 
-    train_and_test.run(seed, graph_folder, train_ratio, max_epochs=max_epochs)
+    results = train_and_test.run(seed, graph_folder, train_ratio, max_epochs=max_epochs)
+
+    # Save results
+    DB.hset(key, mapping={**d, **results})
 
 
 
