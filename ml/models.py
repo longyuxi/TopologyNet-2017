@@ -65,7 +65,6 @@ class SusNet(pl.LightningModule):
 
     def on_fit_start(self):
         self.tensorboard = self.logger.experiment
-        self.tensorboard.add_text('Model', str(self))
 
     def training_step(self, batch, batch_idx):
         x, y = batch
@@ -163,7 +162,6 @@ class WeiTopoNet(pl.LightningModule):
 
     def on_fit_start(self):
         self.tensorboard = self.logger.experiment
-        self.tensorboard.add_text('Model', str(self))
 
     def training_step(self, batch, batch_idx):
         x, y = batch
@@ -231,7 +229,6 @@ class MLPTopoNet(pl.LightningModule):
 
     def on_fit_start(self):
         self.tensorboard = self.logger.experiment
-        self.tensorboard.add_text('Model', str(self))
 
     def training_step(self, batch, batch_idx):
         x, y = batch
@@ -309,7 +306,6 @@ class AttentionTopoNet(pl.LightningModule):
 
     def on_fit_start(self):
         self.tensorboard = self.logger.experiment
-        self.tensorboard.add_text('Model', str(self))
 
     def training_step(self, batch, batch_idx):
         x, y = batch

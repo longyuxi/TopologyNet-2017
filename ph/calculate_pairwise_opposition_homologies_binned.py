@@ -1,12 +1,16 @@
 # Calculates the pairwise opposition homology and stores it as a 4D np array
 # Usage: python calculate_pairwise_opposition_homologies_binned.py --protein protein_file.pdb --ligand ligand_file.mol2 --output pl_opposition.pckl
 
+from pathlib import Path
+import sys
+sys.path.append(str((Path(__file__).parent / '..' ).resolve()))
+from caching import redis_cache
+
 import numpy as np
 from preprocessing import get_mol2_coordinates_by_element, get_pdb_coordinates_by_element
 from gtda.homology import VietorisRipsPersistence
 import argparse
 import pickle
-from pathlib import Path
 
 def opposition_homology(protein_coords, ligand_coords):
     if protein_coords is None or ligand_coords is None:
@@ -70,7 +74,8 @@ def bin_persistence_diagram(diagram, bins=np.arange(0, 50, 0.25), types_of_homol
 
     return output
 
-def run(pdb_file, mol2_file, output_file):
+@redis_cache
+def run(pdb_file, mol2_file):
     binned_diagrams = []
     # Make pairwise opposition homologies
 
@@ -88,8 +93,7 @@ def run(pdb_file, mol2_file, output_file):
 
     binned_diagrams = np.array(binned_diagrams)
 
-    with open(output_file, 'wb') as of:
-        pickle.dump(binned_diagrams, of)
+    return binned_diagrams
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Calculate persistence homology for up to dimension 2 using opposition distance')
@@ -102,4 +106,7 @@ if __name__ == '__main__':
     ligand_mol2 = Path(args.ligand)
     output_file = Path(args.output)
 
-    run(protein_pdb, ligand_mol2, output_file)
+    binned_diagrams = run(protein_pdb, ligand_mol2)
+
+    with open(output_file, 'wb') as of:
+        pickle.dump(binned_diagrams, of)

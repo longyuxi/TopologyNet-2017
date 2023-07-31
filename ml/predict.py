@@ -1,79 +1,35 @@
-# %%
-# For evaluating model output. This script outputs into the 'plots' directory.
-
 import sys
 from pathlib import Path
-sys.path.append(str(Path(__file__).parent / '..'/ 'ph'))
+sys.path.append(str(Path(__file__).parent / '..'))
 
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-from preprocessing import load_pdbbind_data_index
-import seaborn as sns
 import glob
-from tqdm import tqdm
-import plotly.express as px
-
-from dataset import WeiDataset
 from models import WeiTopoNet
-from train import get_train_test_indices, TRANSPOSE_DATASET
+from dataset import process_homologies_into_tensor
+from train import TRANSPOSE_DATASET
+import torch
+
+from ph.calculate_2345_homology import run as calculate_2345_homology
+from ph.calculate_pairwise_opposition_homologies_binned import run as calculate_pairwise_opposition_homologies_binned
+
+weights = glob.glob('/usr/project/dlab/Users/jaden/tnet2017-new/ml/trial/lightning_logs/version_3/checkpoints/*')[0]
+
+def predict(protein_file, ligand_file, weights=weights):
+    homologies = calculate_2345_homology(protein_file, ligand_file)
+    pairwise_opposition_homologies = calculate_pairwise_opposition_homologies_binned(protein_file, ligand_file)
+    pairwise_opposition_homologies = torch.from_numpy(pairwise_opposition_homologies).float()
+    out_tensor = process_homologies_into_tensor([pairwise_opposition_homologies, homologies])
+
+    wtn = WeiTopoNet()
+    wtn = wtn.load_from_checkpoint(weights, transpose=TRANSPOSE_DATASET, map_location=torch.device('cpu'))
+
+    return wtn(out_tensor[None, :, :])[0][0]
 
 
-#################
-# Change this
-
-index_location = '/home/longyuxi/Documents/mount/pdbbind-dataset/index/INDEX_refined_data.2020'
-weights = glob.glob('lightning_logs/version_0/checkpoints/*')[0]
-homologies_base_folder = (Path(__file__).parent / '..' / 'ph'/ 'computed_homologies').resolve()
-homologies_base_folder = str(homologies_base_folder)
-
-#################
 
 if __name__ == '__main__':
-    train_index, test_index = get_train_test_indices()
-    test_index.reset_index(drop=True, inplace=True)
-    wd = WeiDataset(test_index, transpose=TRANSPOSE_DATASET, return_pdb_code_first=True, homology_base_folder=homologies_base_folder)
-    wtn = WeiTopoNet()
-    wtn = wtn.load_from_checkpoint(weights, transpose=TRANSPOSE_DATASET)
-
-
-    predicted = []
-    actual = []
-    pdbcodes = []
-
-    peaked_molecules = []
-    regular_molecules = []
-
-    for i in tqdm(range(len(wd))):
-        pdbcode, x, y = wd[i]
-        y_hat = wtn(x[None, :, :])[0][0].detach().cpu().numpy()
-        predicted.append(y_hat)
-
-        actual.append(y[0].detach().cpu().numpy())
-        pdbcodes.append(pdbcode)
-
-
-    predicted = np.array(predicted)
-    actual = np.array(actual)
-
-    save_base_folder = Path('plots')
-    save_base_folder.mkdir(parents=True, exist_ok=True)
-
-    df = pd.DataFrame(np.stack((predicted, actual), axis=-1), columns=['Predicted -logKd/Ki', 'Actual -logKd/Ki'])
-
-    pearson_corr = df.corr(numeric_only=True).iloc[0, 1]
-    mse = np.sum((np.array(predicted) - np.array(actual))**2) / len(predicted)
-
-    # Plot distribution of binding affinity in test set
-    binding_affinities = test_index['-logKd/Ki'].to_numpy()
-    fig = px.histogram(test_index, x='-logKd/Ki', nbins=100, title=f'Test set binding affinity distribution. n={len(test_index)}, range={np.min(binding_affinities)} ~ {np.max(binding_affinities)}')
-    fig.write_html(str(save_base_folder / 'test_set_distribution.html'))
-
-    # Plot results
-    df = pd.DataFrame(np.stack((predicted, actual), axis=-1), columns=['Predicted -logKd/Ki', 'Actual -logKd/Ki'])
-    fig = px.scatter(df, x='Actual -logKd/Ki', y='Predicted -logKd/Ki', title=f'Test set. MSE: {mse:.2f}. Pearson Correlation: {pearson_corr:.2f}')
-    fig.write_html(str(save_base_folder / 'predictions.html'))
-
-    # Save a version with the pdb codes
-    df = pd.DataFrame(np.stack((pdbcodes, predicted, actual), axis=-1), columns=['PDB Code', 'Predicted -logKd/Ki', 'Actual -logKd/Ki'])
-    df.to_csv(save_base_folder / 'outputs.csv', index=False)
+    from pathlib import Path
+    example_pdbbind_folder = Path(__file__).parent / '..' / 'example_pdbbind_folder' / '1a1e'
+    example_protein_file = (example_pdbbind_folder / '1a1e_protein.pdb').resolve()
+    example_ligand_file = (example_pdbbind_folder / '1a1e_ligand.mol2').resolve()
+    predicted_affinity = predict(str(example_protein_file), str(example_ligand_file))
+    print(f'Predicted affinity: {predicted_affinity}')
