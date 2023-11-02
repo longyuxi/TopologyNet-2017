@@ -172,7 +172,7 @@ def populate_db(rebuild_all_keys=False):
             'seed': f'{hash(k)}',
             'graph_folder': f'{ROOT_DIR}/plots/{k}',
             'train_ratio': f'{TRAIN_RATIO}',
-            'max_epochs': '150'
+            'max_epochs': '1000'
         })
 
     print(DB.hgetall(keys[0]))
@@ -187,5 +187,5 @@ def get_db():
 
 if __name__ == '__main__':
     # rebuild_db()
-    main(dry_run=True)
+    main(dry_run=True, rebuild_all_keys=True)
     main(dry_run=False)
