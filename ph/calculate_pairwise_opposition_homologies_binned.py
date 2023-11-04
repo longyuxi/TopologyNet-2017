@@ -4,7 +4,8 @@
 from pathlib import Path
 import sys
 sys.path.append(str((Path(__file__).parent / '..' ).resolve()))
-from caching import redis_cache
+from joblib import Memory
+memory = Memory("__joblib_cache__", verbose=0)
 
 import numpy as np
 from preprocessing import get_mol2_coordinates_by_element, get_pdb_coordinates_by_element
@@ -74,7 +75,7 @@ def bin_persistence_diagram(diagram, bins=np.arange(0, 50, 0.25), types_of_homol
 
     return output
 
-@redis_cache
+@memory.cache
 def run(pdb_file, mol2_file):
     binned_diagrams = []
     # Make pairwise opposition homologies

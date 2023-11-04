@@ -2,6 +2,8 @@
 
 A reproduction of the TopologyNet-BP algorithm from *TopologyNet: Topology based deep convolutional and multi-task neural networks for biomolecular property predictions* by Zixuan Cang, Guo-Wei Wei. [Paper link](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005690)
 
+This repository is part of *Predicting Affinity Through Homology (PATH): Interpretable Binding Affinity Prediction with Persistent Homology*. The inference code for PATH can be found [in the OSPREY3 package](https://github.com/donaldlab/OSPREY3/tree/main/src/main/python/path). The training code for PATH can be found [here](https://github.com/longyuxi/gbr-tnet).
+
 # Using this repository
 
 *Execution of all the code in this repository is done on an x86 machine running Ubuntu 20*
@@ -30,14 +32,39 @@ As mentioned, a Redis database is used for managing jobs submitted to the SLURM 
 1. Build and install Redis via [https://redis.io/docs/getting-started/installation/install-redis-from-source/].
 2. Optionally, add the `src` folder of Redis to path.
 3. Create a `redis.conf` file somewhere and set a default password by putting e.g. `requirepass topology` in that file.
-4. Start the redis server on a host and adjust the `DB` constant in `dispatch_jobs.py` accordingly.
+4. Start the redis server on a host with your `redis.conf` and adjust the `DB` constant in `dispatch_jobs.py` accordingly.
 
 The two additional sets of scripts are:
 
-1. **Perturbation analysis**: Analysis of how much each atom contributes to the prediction of TNet-BP by perturbing them. See `perturbations/README.md`
+1. **Perturbation analysis**: Analysis of how much each atom contributes to the prediction of TNet-BP by perturbing them and observing the change in binding affinity predicted by TNet-BP. See `perturbations/README.md`.
 
-2. **Support vector machine (SVM)**: An SVM regressor directly on the feature vector constructed with persistent homology, with feature curation similar to that of PATH (Predicting Affinity Through Homology). See `svm` folder.
+2. **Support vector machine (SVM)**: An SVM regressor directly on the feature vector constructed with persistent homology, with feature selection similar to that of PATH (Predicting Affinity Through Homology). See `svm` folder.
 
+*Perturbation analysis came out fruitless. SVM in the style of PATH didn't perform as well as PATH.*
+
+
+# Cite
+
+Citation for the original TNet-BP algorithm (Cang and Wei 2017)
+
+```
+@article{cang2017topologynet,
+  title={TopologyNet: Topology based deep convolutional and multi-task neural networks for biomolecular property predictions},
+  author={Cang, Zixuan and Wei, Guo-Wei},
+  journal={PLoS computational biology},
+  volume={13},
+  number={7},
+  pages={e1005690},
+  year={2017},
+  publisher={Public Library of Science San Francisco, CA USA}
+}
+```
+
+Citation for PATH
+
+```
+[update this once published]
+```
 
 ---
 
