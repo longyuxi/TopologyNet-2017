@@ -8,9 +8,12 @@ This repository is part of *Predicting Affinity Through Homology (PATH): Interpr
 
 *Execution of all the code in this repository is done on an x86 machine running Ubuntu 20*
 
+1. Install [git lfs](https://git-lfs.com/).
+2. Clone this repository.
+
 ## Core features
 
-1. **Prerequisites**: I manage my software environment with conda.
+1. **Prerequisites**: My software environment is managed with conda.
     1. Install [conda](https://docs.conda.io/projects/conda/en/stable/user-guide/install/download.html) or [mamba](https://mamba.readthedocs.io/en/latest/mamba-installation.html) (you only need one of the two).
     2. Run `conda env create -f tnet2017.yml` or `mamba env create -f tnet2017.yml` to create the `tnet2017` environment. Activate this environment by `conda activate tnet2017`.
     3. Finally, `pip install -r requirements.txt` to install additional dependencies for this project that are not available through conda.
