@@ -66,7 +66,14 @@ Citation for the original TNet-BP algorithm (Cang and Wei 2017)
 Citation for PATH
 
 ```
-[update this once published]
+@article{long2023predicting,
+  title={Predicting Affinity Through Homology (PATH): Interpretable Binding Affinity Prediction with Persistent Homology},
+  author={Long, Yuxi and Donald, Bruce R},
+  journal={bioRxiv},
+  pages={2023--11},
+  year={2023},
+  publisher={Cold Spring Harbor Laboratory}
+}
 ```
 
 ---

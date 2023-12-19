@@ -1,23 +1,48 @@
+## This file is part of PATH, which is part of OSPREY 3.0
+## 
+## OSPREY Protein Redesign Software Version 3.0
+## Copyright (C) 2001-2023 Bruce Donald Lab, Duke University
+## 
+## OSPREY is free software: you can redistribute it and/or modify
+## it under the terms of the GNU General Public License version 2
+## as published by the Free Software Foundation.
+## 
+## You should have received a copy of the GNU General Public License
+## along with OSPREY.  If not, see <http://www.gnu.org/licenses/>.
+## 
+## OSPREY relies on grants for its development, and since visibility
+## in the scientific literature is essential for our success, we
+## ask that users of OSPREY cite our papers. See the CITING_OSPREY
+## document in this distribution for more information.
+## 
+## Contact Info:
+##    Bruce Donald
+##    Duke University
+##    Department of Computer Science
+##    Levine Science Research Center (LSRC)
+##    Durham
+##    NC 27708-0129
+##    USA
+##    e-mail: www.cs.duke.edu/brd/
+## 
+## <signature of Bruce Donald>, Mar 1, 2023
+## Bruce Donald, Professor of Computer Science
+
 # First train, then test
 
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent / '..' / '..'/ 'ph'))
 sys.path.append(str(Path(__file__).parent / '..' ))
-import argparse
 
 import numpy as np
 import pytorch_lightning as pl
-import torch
-from torch.utils.data import DataLoader
-import torch.nn as nn
-import torch.nn.functional as F
 from preprocessing import load_pdbbind_data_index
 import plotly.express as px
 from tqdm import tqdm
 import pandas as pd
 
-from models import SusNet, WeiTopoNet, MLPTopoNet, AttentionTopoNet
+from models import WeiTopoNet
 from dataset import ProteinHomologyDataModule, WeiDataset
 
 ###################

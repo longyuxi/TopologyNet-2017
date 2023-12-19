@@ -1,86 +1,36 @@
-import numpy as np
+## This file is part of PATH, which is part of OSPREY 3.0
+## 
+## OSPREY Protein Redesign Software Version 3.0
+## Copyright (C) 2001-2023 Bruce Donald Lab, Duke University
+## 
+## OSPREY is free software: you can redistribute it and/or modify
+## it under the terms of the GNU General Public License version 2
+## as published by the Free Software Foundation.
+## 
+## You should have received a copy of the GNU General Public License
+## along with OSPREY.  If not, see <http://www.gnu.org/licenses/>.
+## 
+## OSPREY relies on grants for its development, and since visibility
+## in the scientific literature is essential for our success, we
+## ask that users of OSPREY cite our papers. See the CITING_OSPREY
+## document in this distribution for more information.
+## 
+## Contact Info:
+##    Bruce Donald
+##    Duke University
+##    Department of Computer Science
+##    Levine Science Research Center (LSRC)
+##    Durham
+##    NC 27708-0129
+##    USA
+##    e-mail: www.cs.duke.edu/brd/
+## 
+## <signature of Bruce Donald>, Mar 1, 2023
+## Bruce Donald, Professor of Computer Science
+
 import pytorch_lightning as pl
 import torch
-from torch.utils.data import DataLoader
 import torch.nn as nn
-import torch.nn.functional as F
-
-class SusNet(pl.LightningModule):
-    # Takes input size [36, 201]
-    # Not sure if this is correct? Or is it [201, 36]
-    def __init__(self):
-        super().__init__()
-        self.c1 = self.conv(in_channels=36)
-        self.c2 = self.conv()
-        self.pool = nn.AvgPool1d(kernel_size=2, stride=2)
-        self.dropout = nn.Dropout1d(0.25)
-
-        self.c3 = self.conv(in_channels=144, out_channels=288)
-        self.c4 = self.conv(in_channels=288, out_channels=288)
-
-        self.d1 = self.dense(14400, 2048)
-        self.d2 = self.dense(2048, 2048)
-        self.d3 = self.dense(2048, 2048, activation=nn.ReLU())
-        self.dropout2 = nn.Dropout1d(0.25)
-
-        self.fc = nn.Linear(2048, 1)
-        self.criterion = nn.MSELoss()
-
-
-    def conv(self, in_channels=144, out_channels=144, kernel_size=3, padding='same'):
-        return nn.Sequential(
-            nn.Conv1d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, padding=padding),
-            nn.ReLU()
-            )
-
-    def dense(self, in_features, out_features, activation=nn.Tanh()):
-        return nn.Sequential(
-            nn.Linear(in_features, out_features),
-            activation
-            )
-
-
-    def forward(self, x):
-
-        x = self.c1(x)
-        x = self.c2(x)
-        x = self.pool(x)
-        x = self.dropout(x)
-
-        x = self.c3(x)
-        x = self.c4(x)
-        x = self.pool(x)
-        x = self.dropout(x)
-
-        x = nn.Flatten()(x)
-
-        x = self.d1(x)
-        x = self.d2(x)
-        x = self.d3(x)
-        x = self.dropout2(x)
-
-        x = self.fc(x)
-
-        return x
-
-    def on_fit_start(self):
-        self.tensorboard = self.logger.experiment
-
-    def training_step(self, batch, batch_idx):
-        x, y = batch
-        y_hat = self(x)
-        loss = self.criterion(y_hat, y)
-        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        return loss
-
-    def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=0.002)
-
-    def validation_step(self, batch, batch_idx):
-        x, y = batch
-        y_hat = self(x)
-        loss = self.criterion(y_hat, y)
-        self.log("val_loss", loss)
 
 class WeiTopoNet(pl.LightningModule):
     # Implemented exactly like described in the 2017 paper:

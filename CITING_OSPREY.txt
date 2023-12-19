@@ -1,0 +1,18 @@
+All works in this repository are part of PATH, which is part of the open-source protein redesign software suite OSPREY. We ask that users of this repository cite the following papers, and also mention the name OSPREY, when presenting results from or extensions to OSPREY in papers, patents, and conference presentations. OSPREY relies on grants for its development, and to get grants it's essential for the impacts of OSPREY to be visible in the scientific literature.
+
+
+Mark A. Hallen, Jeffrey W. Martin, Adegoke Ojewole, Jonathan D. Jou, Anna U. Lowegard, Marcel S. Frenkel, Pablo Gainza, Hunter M. Nisonoff, Aditya Mukund, Siyu Wang, Graham T. Holt, David Zhou, Elizabeth Dowd, Bruce R. Donald.  OSPREY 3.0: Open-Source Protein Redesign for You, with Powerful New Features.  Journal of Computational Chemistry 2018; 39(30): 2494-2507;
+URL: https://onlinelibrary.wiley.com/doi/10.1002/jcc.25522
+
+Yuxi Long, and Bruce R. Donald. "Predicting Affinity Through Homology (PATH): Interpretable Binding Affinity Prediction with Persistent Homology." bioRxiv (2023): 2023-11;
+URL: https://www.biorxiv.org/content/10.1101/2023.11.16.567384
+
+
+
+Users of the TopologyNet-BP modules should also cite the original TopologyNet paper:
+
+Zixuan Cang, and Guo-Wei Wei. "TopologyNet: Topology based deep convolutional and multi-task neural networks for biomolecular property predictions." PLoS computational biology 13.7 (2017): e1005690.
+URL: https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005690
+
+
+
