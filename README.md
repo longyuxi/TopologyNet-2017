@@ -48,33 +48,7 @@ The two additional sets of scripts are:
 
 # Cite
 
-Citation for the original TNet-BP algorithm (Cang and Wei 2017)
-
-```
-@article{cang2017topologynet,
-  title={TopologyNet: Topology based deep convolutional and multi-task neural networks for biomolecular property predictions},
-  author={Cang, Zixuan and Wei, Guo-Wei},
-  journal={PLoS computational biology},
-  volume={13},
-  number={7},
-  pages={e1005690},
-  year={2017},
-  publisher={Public Library of Science San Francisco, CA USA}
-}
-```
-
-Citation for PATH
-
-```
-@article{long2023predicting,
-  title={Predicting Affinity Through Homology (PATH): Interpretable Binding Affinity Prediction with Persistent Homology},
-  author={Long, Yuxi and Donald, Bruce R},
-  journal={bioRxiv},
-  pages={2023--11},
-  year={2023},
-  publisher={Cold Spring Harbor Laboratory}
-}
-```
+See `CITING_OSPREY.txt` for details.
 
 ---
 
