@@ -46,9 +46,9 @@ The two additional sets of scripts are:
 *Perturbation analysis came out fruitless. SVM in the style of PATH didn't perform as well as PATH.*
 
 
-# Cite
+# Citation requirements
 
-See `CITING_OSPREY.txt` for details.
+See [CITING_OSPREY.txt](CITING_OSPREY.txt).
 
 ---
 
